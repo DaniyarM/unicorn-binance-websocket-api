@@ -2518,6 +2518,34 @@ class BinanceWebSocketApiManager(threading.Thread):
         # stop a specific stream by stream_id
         logging.info("BinanceWebSocketApiManager.kill_stream(" + str(stream_id) + ")")
         self.stream_list[stream_id]['kill_request'] = True
+        
+    def top_stream_data_from_stream_buffer(self, stream_buffer_name=False):
+        """
+        Get oldest entry from
+        `stream_buffer <https://github.com/oliver-zehentleitner/unicorn-binance-websocket-api/wiki/%60stream_buffer%60>`_
+        without remove from stack (FIFO stack)
+
+        :param stream_buffer_name: `False` to read from generic stream_buffer, the stream_id if you used True in
+                                   create_stream() or the string name of a shared stream_buffer.
+        :type stream_buffer_name: bool or str
+        :return: stream_data - str, dict or False
+        """
+        if stream_buffer_name is False:
+            try:
+                with self.stream_buffer_lock:
+                    stream_data = self.stream_buffer[0]
+                return stream_data
+            except IndexError:
+                return False
+        else:
+            try:
+                with self.stream_buffer_locks[stream_buffer_name]:
+                    stream_data = self.stream_buffers[stream_buffer_name][0]
+                return stream_data
+            except IndexError:
+                return False
+            except KeyError:
+                return False
 
     def pop_stream_data_from_stream_buffer(self, stream_buffer_name=False):
         """
